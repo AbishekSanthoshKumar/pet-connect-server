@@ -1,0 +1,114 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  name     String
+  email    String @unique
+  phone    String
+  password String
+  role     String
+
+  pets     Pet[]
+  bookings Booking[]
+}
+
+model Pet {
+  id     Int    @id @default(autoincrement())
+  name   String
+  type   String
+  breed  String
+  age    Int
+  weight Float
+
+  ownerId  Int
+  owner    User      @relation(fields: [ownerId], references: [id])
+  bookings Booking[]
+}
+
+model Service {
+  id         Int    @id @default(autoincrement())
+  name       String
+  type       String
+  price      Float
+  providerId Int
+}
+
+model Booking {
+  id          Int      @id @default(autoincrement())
+
+  userId      Int
+  providerId  Int
+  petId       Int
+
+  date        String
+  time        String
+  status      String
+  notes       String?
+  paymentMethod String?
+
+  user        User     @relation(fields: [userId], references: [id])
+  provider    Provider @relation(fields: [providerId], references: [id])
+  pet         Pet      @relation(fields: [petId], references: [id])
+}
+
+model EmergencyBooking {
+  id      Int    @id @default(autoincrement())
+  urgency String
+  status  String
+
+  userId Int
+  petId  Int
+}
+
+model Payment {
+  id     Int    @id @default(autoincrement())
+  amount Float
+  method String
+  status String
+
+  bookingId Int
+}
+
+model Availability {
+  id        Int    @id @default(autoincrement())
+  day       String
+  startTime String
+  endTime   String
+
+  providerId Int
+}
+
+model Report {
+  id           Int     @id @default(autoincrement())
+  diagnosis    String
+  prescription String
+  notes        String?
+
+  bookingId Int
+}
+
+model Provider {
+  id                  Int      @id @default(autoincrement())
+  name                String
+  type                String
+  specialization      String
+  experience          String
+  image               String?
+  availability        String?
+  price               Int
+  trustScore          Int
+  totalAssignments    Int
+  completedAssignments Int
+  onTimeCount         Int
+  frequentClientCount Int
+  emergencyAvailable  Boolean  @default(false)
+
+  bookings            Booking[]  // ✅ ADD THIS
+}
