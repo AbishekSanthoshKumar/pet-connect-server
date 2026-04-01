@@ -14,11 +14,15 @@ exports.register = async ({ name, email, password, role, specialist, experience 
 
   const user = result.rows[0];
 
-  await db.query(
-    `INSERT INTO providers (user_id, type, specialization, experience)
+  if (role != 'owner') {
+
+    await db.query(
+      `INSERT INTO providers (user_id, type, specialization, experience)
      VALUES ($1, $2, $3, $4)`,
-    [user.id, role, specialist, experience]
-  );
+      [user.id, role, specialist, experience]
+    );
+
+  }
 
   const access_token = jwt.sign(user, process.env.JWT_SECRET, {
     expiresIn: '365d'
