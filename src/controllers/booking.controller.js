@@ -103,7 +103,7 @@ exports.updateBookingStatus = async (req, res) => {
     }
 
     values.push(bookingId);
-    query += sets.join(", ") + ` WHERE booking_id = $${values.length} RETURNING *`;
+    query += sets.join(", ") + ` WHERE id = $${values.length} RETURNING *`;
 
     const result = await pool.query(query, values);
 
@@ -113,30 +113,30 @@ exports.updateBookingStatus = async (req, res) => {
 
     const booking = result.rows[0];
 
-    // Trust Score logic (if status changed)
-    if (status) {
-        const upperStatus = status.toUpperCase();
-        if (upperStatus === 'COMPLETED') {
-            await pool.query(
-                "UPDATE booking_profiles SET trust_score = LEAST(100, trust_score + 5) WHERE user_id = $1",
-                [booking.provider_id]
-            );
-        } else if (upperStatus === 'REJECTED') {
-            await pool.query(
-                "UPDATE booking_profiles SET trust_score = GREATEST(0, trust_score - 5) WHERE user_id = $1",
-                [booking.provider_id]
-            );
-        }
-    }
+    // // Trust Score logic (if status changed)
+    // if (status) {
+    //     const upperStatus = status.toUpperCase();
+    //     if (upperStatus === 'COMPLETED') {
+    //         await pool.query(
+    //             "UPDATE booking_profiles SET trust_score = LEAST(100, trust_score + 5) WHERE user_id = $1",
+    //             [booking.provider_id]
+    //         );
+    //     } else if (upperStatus === 'REJECTED') {
+    //         await pool.query(
+    //             "UPDATE booking_profiles SET trust_score = GREATEST(0, trust_score - 5) WHERE user_id = $1",
+    //             [booking.provider_id]
+    //         );
+    //     }
+    // }
 
-    // Earnings logic (if payment_status changed to PAID)
-    if (payment_status && payment_status.toUpperCase() === 'PAID') {
-        const fee = booking.service_fee || 0;
-        await pool.query(
-            "UPDATE booking_profiles SET total_earned = total_earned + $1 WHERE user_id = $2",
-            [fee, booking.provider_id]
-        );
-    }
+    // // Earnings logic (if payment_status changed to PAID)
+    // if (payment_status && payment_status.toUpperCase() === 'PAID') {
+    //     const fee = booking.service_fee || 0;
+    //     await pool.query(
+    //         "UPDATE booking_profiles SET total_earned = total_earned + $1 WHERE user_id = $2",
+    //         [fee, booking.provider_id]
+    //     );
+    // }
 
     res.status(200).json({
       success: true,
