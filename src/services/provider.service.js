@@ -12,7 +12,7 @@ exports.createProvider = async ({ user_id, type, specialization, experience }) =
 };
 
 exports.getProviders = async (role) => {
-  const result = await db.query(`SELECT * FROM providers WHERE type = $1`, [role]);
+  const result = await db.query(`SELECT *, TRUE AS "emergencyAvailable" FROM providers WHERE type = $1`, [role]);
   return result.rows;
 };
 
