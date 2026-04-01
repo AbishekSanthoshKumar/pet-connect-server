@@ -72,3 +72,79 @@ exports.getProviderBookings = async (req, res) => {
 
 };
 
+// Update booking status (Accept/Reject/Payment)
+exports.updateBookingStatus = async (req, res) => {
+  try {
+    const { bookingId } = req.params;
+    const { status, payment_status } = req.body;
+
+    let query = "UPDATE bookings SET ";
+    const values = [];
+    const sets = [];
+
+    if (status) {
+      if (!['PENDING', 'ACCEPTED', 'REJECTED', 'COMPLETED'].includes(status.toUpperCase())) {
+        return res.status(400).json({ message: "Invalid status" });
+      }
+      values.push(status.toUpperCase());
+      sets.push(`status = $${values.length}`);
+    }
+
+    if (payment_status) {
+      if (!['PENDING', 'PAID', 'REFUNDED'].includes(payment_status.toUpperCase())) {
+        return res.status(400).json({ message: "Invalid payment status" });
+      }
+      values.push(payment_status.toUpperCase());
+      sets.push(`payment_status = $${values.length}`);
+    }
+
+    if (sets.length === 0) {
+      return res.status(400).json({ message: "No fields to update" });
+    }
+
+    values.push(bookingId);
+    query += sets.join(", ") + ` WHERE booking_id = $${values.length} RETURNING *`;
+
+    const result = await pool.query(query, values);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: "Booking not found" });
+    }
+
+    const booking = result.rows[0];
+
+    // Trust Score logic (if status changed)
+    if (status) {
+        const upperStatus = status.toUpperCase();
+        if (upperStatus === 'COMPLETED') {
+            await pool.query(
+                "UPDATE booking_profiles SET trust_score = LEAST(100, trust_score + 5) WHERE user_id = $1",
+                [booking.provider_id]
+            );
+        } else if (upperStatus === 'REJECTED') {
+            await pool.query(
+                "UPDATE booking_profiles SET trust_score = GREATEST(0, trust_score - 5) WHERE user_id = $1",
+                [booking.provider_id]
+            );
+        }
+    }
+
+    // Earnings logic (if payment_status changed to PAID)
+    if (payment_status && payment_status.toUpperCase() === 'PAID') {
+        const fee = booking.service_fee || 0;
+        await pool.query(
+            "UPDATE booking_profiles SET total_earned = total_earned + $1 WHERE user_id = $2",
+            [fee, booking.provider_id]
+        );
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Booking updated successfully",
+      data: booking
+    });
+  } catch (error) {
+    console.error("Update booking status error:", error);
+    res.status(500).json({ error: error.message });
+  }
+};
