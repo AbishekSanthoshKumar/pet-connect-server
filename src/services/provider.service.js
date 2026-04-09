@@ -58,3 +58,25 @@ exports.getVetEarnings = async (vetId) => {
 
 
 };
+
+exports.saveAvailability = async (startTime, endTime, id) => {
+  await db.query(
+    `UPDATE providers 
+      SET availability_start = $1, 
+      availability_end = $2
+      WHERE user_id = $3;`,
+    [startTime, endTime, id]
+  );
+};
+
+exports.getAvailability = async (id) => {
+  let result = await db.query(
+    `SELECT availability_start, availability_end
+      FROM providers 
+      WHERE user_id = $1;`,
+    [id]
+  );
+
+  return result
+
+};

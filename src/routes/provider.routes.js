@@ -8,6 +8,7 @@ router.get('/', authMiddleware, controller.getProviders);
 router.get('/:id', authMiddleware, controller.getProviderById);
 router.get("/dashboard/:vetId", authMiddleware, controller.getVetDashboard);
 router.get("/caretaker/:caretakerId", authMiddleware, controller.getCaretakerDashboard);
+router.post("/availability", authMiddleware, controller.setAvailability);
 
 
 

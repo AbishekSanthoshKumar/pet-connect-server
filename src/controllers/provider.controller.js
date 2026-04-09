@@ -39,30 +39,32 @@ exports.getVetDashboard = async (req, res) => {
 
     const { vetId } = req.params;
 
-
-
     // Stats: Total appointments, pending, completed
 
     const dashboard = await service.getVetDashboard(vetId);
 
+    const availability = await service.getAvailability(vetId);
 
     // Earnings History (Monthly)
 
     const earnings = await service.getVetEarnings()
 
-
-    res.status(200).json({
-
+    let json = {
       ...dashboard.rows[0],
+      earningsHistory: earnings.rows,
+      availability: availability.rows.length > 0
+        ? availability.rows[0]
+        : null,
+    }
 
-      earningsHistory: earnings.rows
+    console.log("json", json)
 
-    });
+    res.status(200).json(json);
 
   } catch (error) {
 
     console.log("error", error);
-    
+
     res.status(500).json({ error: error.message });
 
   }
@@ -91,11 +93,45 @@ exports.getCaretakerDashboard = async (req, res) => {
       [caretakerId]
     );
 
+    const availability = await service.getAvailability(caretakerId);
+
     res.status(200).json({
       ...dashboard.rows[0],
-      earningsHistory: earnings.rows
+      earningsHistory: earnings.rows,
+      availability: availability.rows.length > 0
+        ? availability.rows[0]
+        : null,
     });
+
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 };
+
+// setAvailability
+exports.setAvailability = async (req, res) => {
+  try {
+
+    let { id } = req.decoded
+
+    let { startTime, endTime } = req.body
+
+    console.log("startTime, endTime", startTime, endTime);
+
+    // startTime, endTime 9:00 AM 5:00 PM
+
+    await service.saveAvailability(startTime, endTime, id)
+
+    return res.status(200).json({
+      message: "Availability set successfully",
+    })
+
+  } catch (error) {
+    console.log("error", error);
+
+    return res.status(500).json({
+      message: "Something went wrong",
+      error: error,
+    })
+  }
+}
